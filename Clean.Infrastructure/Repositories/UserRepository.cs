@@ -20,33 +20,71 @@ namespace Clean.Infrastructure.Repositories
 
         public async Task<ResponseDto> CreateUser(AddUserDto addUserDto)
         {
-            var Response = new ResponseDto();
+            var response = new ResponseDto();
             try
             {
+                var isExist = await IsUserEmailExist(addUserDto.Email);
+                if (isExist != null)
+                {
+                    response.Message = "User Email Already Exist";
+                    return response;
+                }
+                var role = await this.db.Roles.FirstOrDefaultAsync(r=>r.ID==addUserDto.RoleId);
+                if(role == null)
+                {
+                    response.Message = "No Role Found";
+                    return response;
+                }
                 var user = this.mapper.Map<User>(addUserDto);
                 await this.db.Users.AddAsync(user);
                 await this.db.SaveChangesAsync();
-                Response.Status = true;
-                Response.Message = "User Adedd SuccessFully";
+                response.Status = true;
+                response.Message = "User Adedd SuccessFully";
             }
             catch (Exception ex)
             {
 
-                Response.Status = false;
-                Response.Message = ex.Message;
+                response.Message = ex.Message;
             }
-            return Response;
+            return response;
 
         }
 
-        public Task<ResponseDto> DeleteUser(int id)
+        public async Task<ResponseDto> DeleteUser(int id)
         {
-            throw new NotImplementedException();
+            ResponseDto response = new ResponseDto();
+            try
+            {
+                var user = await GetUser(id);
+                if (user != null)
+                {
+                    if (!user.IsDeleted)
+                    {
+                        DeleteOrRestoreUser(user, true);
+                        await this.db.SaveChangesAsync();
+                        response.Status = true;
+                        response.Message = "Success";
+                    }
+                    else
+                    {
+                        response.Message = $"User is Already Retired";
+                    }
+                }
+                else
+                {
+                    response.Message = "No Record Found";
+                }
+            }
+            catch (Exception ex)
+            {
+                response.Message = ex.InnerException == null ? ex.Message : ex.InnerException.Message;
+            }
+            return response;
         }
 
         public async Task<ResponseDto> GetAllUsers(int pageNo, int pageSize, string searchString, bool includeDeleted)
         {
-            var Response = new ResponseDto();
+            var response = new ResponseDto();
             try
             {
                 //CreateProjectUsingCmd crud = new CreateProjectUsingCmd();
@@ -55,7 +93,7 @@ namespace Clean.Infrastructure.Repositories
                        .Select(u => new
                        {
                            u.ID,
-                           u.Surname,
+                           u.SurName,
                            u.Email,
                            u.Password,
                            u.FirstName,
@@ -71,38 +109,146 @@ namespace Clean.Infrastructure.Repositories
                     .Skip((pageNo - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
-                var response = new
+                var responseData = new
                 {
                     TotalCounts = totalCount,
                     Users = user
                 };
-                Response.Status = true;
-                Response.Message = "Success";
-                Response.Data = response;
+                response.Status = true;
+                response.Message = "Success";
+                response.Data = responseData;
 
             }
             catch (Exception ex)
             {
-                Response.Status = false;
-                Response.Message = ex.Message;
+                response.Message = ex.InnerException == null ? ex.Message : ex.InnerException.Message;
 
             }
-            return Response;
+            return response;
         }
 
-        public Task<ResponseDto> GetUserById(int id)
+        public async Task<ResponseDto> GetUserById(int id)
         {
-            throw new NotImplementedException();
+            ResponseDto response = new ResponseDto();
+            try
+            {
+                var user = await GetUser(id);
+
+                if (user != null)
+                {
+
+                    var responseData = new
+                    {
+                        user.ID,
+                        user.FirstName,
+                        user.Email,
+                        user.SurName,
+                        user.Password,
+                        Role = user.Role != null ? new { Name = user.Role.RoleName, id = user.Role.ID } : null
+                    };
+
+                    response.Data = responseData;
+                    response.Status = true;
+                    response.Message = "Success";
+                }
+                else
+                {
+                    response.Status = false;
+                    response.Message = "No Record Found";
+                }
+            }
+            catch (Exception ex)
+            {
+                response.Status = false;
+                response.Message = ex.InnerException?.Message ?? ex.Message;
+            }
+
+            return response;
         }
 
-        public Task<ResponseDto> RestoreUser(int id)
+        public async Task<ResponseDto> RestoreUser(int id)
         {
-            throw new NotImplementedException();
+            ResponseDto response = new ResponseDto();
+            try
+            {
+                var user = await GetUser(id);
+                if (user != null)
+                {
+                    if (!user.IsDeleted)
+                    {
+                        DeleteOrRestoreUser(user, false);
+                        await this.db.SaveChangesAsync();
+                        response.Status = true;
+                        response.Message = "Success";
+                    }
+                    else
+                    {
+                        response.Status = false;
+                        response.Message = $"User is Already Retired";
+                    }
+                }
+                else
+                {
+                    response.Status = false;
+                    response.Message = "No Record Found";
+                }
+            }
+            catch (Exception ex)
+            {
+                response.Status = false;
+                response.Message = ex.InnerException == null ? ex.Message : ex.InnerException.Message;
+            }
+            return response;
         }
 
-        public Task<ResponseDto> UpdateUser(EditUserDto editUserDto)
+        public async Task<ResponseDto> UpdateUser(EditUserDto editUserDto)
         {
-            throw new NotImplementedException();
+            ResponseDto response = new ResponseDto();
+            try
+            {
+
+                var user = await GetUser(editUserDto.ID);
+                if (user != null)
+                {
+                    var isExist = await IsUserEmailExist(editUserDto.Email);
+                    if (isExist != null && isExist.Email != user.Email)
+                    {
+                        response.Message = "User Email Already Exist";
+                        return response;
+                    }
+                    mapper.Map(editUserDto, user);
+                    user.UpdatedDateTime = DateTime.UtcNow;
+                    await this.db.SaveChangesAsync();
+                    response.Status = true;
+                    response.Message = "Success";
+                }
+                else
+                {
+                    response.Message = "No Record Found";
+                }
+            }
+            catch (Exception ex)
+            {
+                response.Status = false;
+                response.Message = ex.InnerException == null ? ex.Message : ex.InnerException.Message;
+            }
+            return response;
+        }
+        public async Task<User> GetUser(int Id)
+        {
+            return await this.db.Users
+                .Include(u => u.Role)
+               .FirstOrDefaultAsync(u => u.ID == Id);
+        }
+        private void DeleteOrRestoreUser(User user, bool flag)
+        {
+            user.IsDeleted = flag;
+            user.UpdatedDateTime = DateTime.UtcNow;
+        }
+        private async Task<User?> IsUserEmailExist(string email)
+        {
+            return await this.db.Users.Where(x => x.Email.Equals(email) && x.IsActive == true).FirstOrDefaultAsync();
+
         }
     }
 }

@@ -1,11 +1,6 @@
 ﻿using Clean.Application.Dtos;
 using Clean.Application.Dtos.Users;
 using Clean.Application.Interface;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Clean.Application.Services.Users
 {
@@ -23,9 +18,29 @@ namespace Clean.Application.Services.Users
           return  await this.userRepository.CreateUser(addUserDto);
         }
 
+        public Task<ResponseDto> DeleteUser(int id)
+        {
+           return this.userRepository.DeleteUser(id);
+        }
+
         public async Task<ResponseDto> GetAllUsers(int pageNo, int pageSize, string searchString, bool includeDeleted)
         {
-           return await userRepository.GetAllUsers(pageNo, pageSize, searchString, includeDeleted);
+           return await this.userRepository.GetAllUsers(pageNo, pageSize, searchString, includeDeleted);
+        }
+
+        public async Task<ResponseDto> GetUserById(int id)
+        {
+            return await this.userRepository.GetUserById(id);
+        }
+
+        public async Task<ResponseDto> RestoreUser(int id)
+        {
+           return await this.userRepository.RestoreUser(id);
+        }
+
+        public async Task<ResponseDto> UpdateUser(EditUserDto editUserDto)
+        {
+            return await this.userRepository.UpdateUser(editUserDto);
         }
     }
 }

@@ -25,5 +25,10 @@ namespace Clean.API.Controllers
         {
             return await userService.CreateUser(userDto);
         }
+        [HttpGet("{id}")]
+        public async Task<ResponseDto> Get(int id)
+        {
+            return await this.userService.GetUserById(id);
+        }
     }
 }
