@@ -44,7 +44,7 @@ namespace Clean.Infrastructure.Repositories
             catch (Exception ex)
             {
 
-                response.Message = ex.Message;
+                response.Message = ex.InnerException?.Message;
             }
             return response;
 
