@@ -30,5 +30,22 @@ namespace Clean.API.Controllers
         {
             return await this.userService.GetUserById(id);
         }
+        [HttpPut]
+        public async Task<ResponseDto> UpdateUser(EditUserDto editUserDto)
+        {
+            return await userService.UpdateUser(editUserDto);
+        }
+
+        [HttpDelete]
+        public async Task<ResponseDto> DeleteUser(int id)
+        {
+            return await userService.DeleteUser(id);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<ResponseDto> RestoreUser(int id)
+        {
+            return await userService.RestoreUser(id);
+        }
     }
 }

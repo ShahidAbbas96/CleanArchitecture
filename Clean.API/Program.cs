@@ -1,5 +1,6 @@
 using Clean.Application.Dtos;
 using Clean.Application.Interface;
+using Clean.Application.Services.Roles;
 using Clean.Application.Services.Stripes;
 using Clean.Application.Services.Users;
 using Clean.Infrastructure;
@@ -50,6 +51,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IStripeRepository, StripeRepository>();
 builder.Services.AddScoped<IStripeService, StripeService>();
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<IRoleService, RoleService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
