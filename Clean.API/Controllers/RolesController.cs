@@ -1,10 +1,12 @@
 ﻿using Clean.Application.Dtos;
 using Clean.Application.Dtos.Roles;
 using Clean.Application.Services.Roles;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Clean.API.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class RolesController : ControllerBase

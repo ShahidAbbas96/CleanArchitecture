@@ -90,6 +90,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowFileOrigin");
 app.UseHttpsRedirection();
 StripeConfiguration.ApiKey = builder.Configuration.GetValue<string>("StripeSettings:SecretKey");
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
