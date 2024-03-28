@@ -1,12 +1,16 @@
 using Clean.Application.Dtos;
 using Clean.Application.Interface;
+using Clean.Application.Services.Auths;
 using Clean.Application.Services.Roles;
 using Clean.Application.Services.Stripes;
 using Clean.Application.Services.Users;
 using Clean.Infrastructure;
 using Clean.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Stripe;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +38,26 @@ builder.Services.AddSwaggerGen();
 //            .AllowAnyMethod();
 //        });
 //});
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["JWTSettings:ValidIssuer"],
+        ValidAudience = builder.Configuration["JWTSettings:ValidAudience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWTSettings:SecretKey"]))
+    };
+});
+
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFileOrigin", builder =>
@@ -51,6 +75,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IStripeRepository, StripeRepository>();
 builder.Services.AddScoped<IStripeService, StripeService>();
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 var app = builder.Build();
