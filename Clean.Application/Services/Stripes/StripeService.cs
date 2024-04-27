@@ -12,13 +12,28 @@ namespace Clean.Application.Services.Stripes
             this.stripeRepository = stripeRepository;
         }
   
-        public async Task<ResponseDto> CheckOutSessionAsync(string priceId, int quantity)
+        public async Task<ResponseDto> CheckOutSessionAsync(List<string> priceIds, int quantity)
         {
-           return await this.stripeRepository.CheckOutSessionAsync(priceId,quantity);
+           return await this.stripeRepository.CheckOutSessionAsync(priceIds,quantity);
         }
+
+        public ResponseDto GetUserSubscriptions(string customerId)
+        {
+           return this.stripeRepository.GetUserSubscriptions(customerId);
+        }
+
+        public async Task<ResponseDto> RecordUsage(string subscriptionItemId, int quantity)
+        {
+            return await this.stripeRepository.RecordUsage(subscriptionItemId, quantity);
+        }
+
         public async Task<ResponseDto> StripeWebhook(string requestBody)
         {
             return await this.stripeRepository.StripeWebhook(requestBody);
+        }
+        public async Task<ResponseDto> UpdateSubscription(string subscriptionId, List<string> subscriptionItemIds, List<string> newPriceIds)
+        {
+            return await this.stripeRepository.UpdateSubscription(subscriptionId,subscriptionItemIds, newPriceIds);
         }
     }
 }

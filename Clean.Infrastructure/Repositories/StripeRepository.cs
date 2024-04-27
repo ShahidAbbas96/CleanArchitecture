@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using Stripe;
 using Stripe.BillingPortal;
 using Stripe.Checkout;
+using Stripe.FinancialConnections;
 
 namespace Clean.Infrastructure.Repositories
 {
@@ -14,55 +15,150 @@ namespace Clean.Infrastructure.Repositories
     {
 
 
-        public async Task<ResponseDto> CheckOutSessionAsync(string priceId, int quantity)
+        public async Task<ResponseDto> CheckOutSessionAsync(List<string> priceIds, int quantity)
         {
             var response = new ResponseDto();
             try
             {
-                // Set Stripe API key (better to set this once during application startup)
                 StripeConfiguration.ApiKey = "sk_test_51N2XwECTIdeS2WufO7o4OXZ4NztBtiLaODpvtjgROviDokgn3itCniC0p5ILrLjUNVDplHIK9U4jvr1mvdMnw5P3008qCAASyL";
 
+                var lineItems = new List<SessionLineItemOptions>();
+
+                foreach (var priceId in priceIds)
+                {
+                    lineItems.Add(new SessionLineItemOptions
+                    {
+                        Price = priceId,
+                    Quantity = 1
+
+                    });
+                }
+              
                 var options = new Stripe.Checkout.SessionCreateOptions
                 {
-                    SuccessUrl = "http://localhost:4200/",
-                    CancelUrl = "http://localhost:4200/",
-                    PaymentMethodTypes = new List<string>
-                    {
-                        "card",
-                    },
-                    LineItems = new List<SessionLineItemOptions>
-                    {
-                        new SessionLineItemOptions
-                        {
-                            //PriceData = new SessionLineItemPriceDataOptions
-                            //{
-                            //    Currency = "usd",
-                            //    UnitAmount = unitAmount*100,
-                            //    ProductData = new SessionLineItemPriceDataProductDataOptions
-                            //    {
-                            //        Name = "Test Product",
-                            //        Description = "Test Price Description",
-                            //    },
-                            //},
-                            //Price="price_1OJw3XCTIdeS2Wuf0VmVbm1g",
-                            Price=priceId,
-                            Quantity = quantity, // You might want to adjust this based on your requirements,
-
-                        },
-
-
-                    },
+                    SuccessUrl = "http://localhost:4200/inform-register",
+                    CancelUrl = "http://localhost:4200/register",
+                    PaymentMethodTypes = new List<string> { "card" },
+                    LineItems = lineItems,
                     Mode = "subscription",
                     ClientReferenceId = "1",
-
+                    PaymentMethodCollection= "if_required"
+                    
                 };
 
                 // Create a new session
                 var service = new Stripe.Checkout.SessionService();
                 var session = await service.CreateAsync(options);
+                response.Data = session.Url;
+                response.Status = true;
+                response.Message = "User Adedd SuccessFully";
+            }
+            catch (Exception ex)
+            {
+                response.Message = ex.InnerException?.Message;
+            }
+            return response;
+        } 
+        public async Task<ResponseDto> RecordUsage(string subscriptionItemId, int quantity)
+        {
+            var response = new ResponseDto();
+            try
+            {
+                StripeConfiguration.ApiKey = "sk_test_51N2XwECTIdeS2WufO7o4OXZ4NztBtiLaODpvtjgROviDokgn3itCniC0p5ILrLjUNVDplHIK9U4jvr1mvdMnw5P3008qCAASyL";
 
-                var url = session.Url;
-                response.Data = url;
+                var options = new UsageRecordCreateOptions
+                {
+                    Quantity = quantity,
+                    Timestamp = DateTime.UtcNow,
+                    Action = "increment",
+                };
+                var service = new UsageRecordService();
+                var usageRecord = service.Create(subscriptionItemId, options);
+                response.Data =usageRecord;
+                response.Status = true;
+                response.Message = "User Adedd SuccessFully";
+            }
+            catch (Exception ex)
+            {
+                response.Message = ex.InnerException?.Message;
+            }
+            return response;
+        }
+        public async Task<ResponseDto> UpdateSubscription(string subscriptionId, List<string> subscriptionItemIds, List<string> newPriceIds)
+        {
+            var response = new ResponseDto();
+            try
+            {
+                StripeConfiguration.ApiKey = "sk_test_51N2XwECTIdeS2WufO7o4OXZ4NztBtiLaODpvtjgROviDokgn3itCniC0p5ILrLjUNVDplHIK9U4jvr1mvdMnw5P3008qCAASyL";
+
+                var options = new SubscriptionUpdateOptions
+                {
+                    Items = new List<SubscriptionItemOptions>()
+                };
+
+                for (int i = 0; i < subscriptionItemIds.Count; i++)
+                {
+                    options.Items.Add(new SubscriptionItemOptions
+                    {
+                        Id = subscriptionItemIds[i],
+                        Deleted = true
+                    });
+                }
+                for(int i = 0;i< newPriceIds.Count; i++)
+                {
+                    options.Items.Add(new SubscriptionItemOptions
+                    {
+                        Price = newPriceIds[i]
+                    });
+                }
+                var service = new SubscriptionService();
+                var updatedSubscription = await service.UpdateAsync(subscriptionId, options);
+
+                response.Data = updatedSubscription;
+                response.Status = true;
+                response.Message = "User Adedd SuccessFully";
+            }
+            catch (Exception ex)
+            {
+                response.Message = ex.InnerException?.Message;
+            }
+            return response;
+        }
+        public ResponseDto GetUserSubscriptions(string customerId)
+        {
+            var response = new ResponseDto();
+            try
+            {
+                StripeConfiguration.ApiKey = "sk_test_51N2XwECTIdeS2WufO7o4OXZ4NztBtiLaODpvtjgROviDokgn3itCniC0p5ILrLjUNVDplHIK9U4jvr1mvdMnw5P3008qCAASyL";
+                var options = new SubscriptionListOptions { Customer = customerId };
+                var service = new SubscriptionService();
+                StripeList<Subscription> subscriptions = service.List(options);
+                string ItemSubscriptionIds="";
+                string PriceIds = "";
+                string SubscriptionId="";
+                foreach (var subscription in subscriptions.Data[0].Items)
+                {
+                    if(PriceIds=="" && ItemSubscriptionIds == "")
+                    {
+                        ItemSubscriptionIds += subscription.Id;
+                        PriceIds +=  subscription.Price.Id;
+                    }
+                    else
+                    {
+                        ItemSubscriptionIds += "," + subscription.Id;
+                        PriceIds += "," + subscription.Price.Id;
+                    }
+                   
+                    SubscriptionId = subscription.Subscription;
+                }
+                string ItemSubscriptionId = subscriptions.Data[0].Items.Data[0].Id;
+                var priceId=  subscriptions.Data[0].Items.Data[0].Price.Id;
+                response.Data = new
+                {
+                    PriceIds= PriceIds,
+                    ItemSubscriptionIds= ItemSubscriptionIds,
+                    SubscriptionId= SubscriptionId
+                };
                 response.Status = true;
                 response.Message = "User Adedd SuccessFully";
             }
@@ -89,7 +185,7 @@ namespace Clean.Infrastructure.Repositories
                 response.Status = false;
                 response.Message = ex.InnerException?.Message ?? ex.Message;
             }
-            return response;
+            return response;v
         }
 
     }
