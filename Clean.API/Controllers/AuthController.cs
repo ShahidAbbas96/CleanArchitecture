@@ -19,6 +19,11 @@ namespace Clean.API.Controllers
         {
             return await this.authService.Login(loginDto);
         }
+        [HttpPost("SendOTPSMS")]
+        public async Task<ResponseDto> SendOTPSMS(LoginDto loginDto)
+        {
+            return await this.authService.SendOTPSMS(loginDto);
+        }
 
         [HttpPost("Signup")]
         public async Task<ResponseDto> Signup(SignupDto signupDto)

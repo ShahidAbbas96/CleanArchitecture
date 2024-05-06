@@ -14,5 +14,6 @@ namespace Clean.Application.Dtos.Auth
         [EmailAddress]
         public string Email { get; set; }
         public string Password { get; set; }
+        public string PhoneNumber { get; set; }
     }
 }

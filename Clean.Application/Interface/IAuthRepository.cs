@@ -12,5 +12,6 @@ namespace Clean.Application.Interface
     {
         public Task<ResponseDto> Signup(SignupDto signupDto);
         public Task<ResponseDto> Login(LoginDto loginDto);
+        public Task<ResponseDto> SendOTPSMS(LoginDto loginDto);
     }
 }

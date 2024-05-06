@@ -12,5 +12,6 @@ namespace Clean.Application.Services.Auths
     {
         public Task<ResponseDto> Signup(SignupDto signupDto);
         public Task<ResponseDto> Login(LoginDto loginDto);
+       public Task<ResponseDto> SendOTPSMS(LoginDto loginDto);
     }
 }

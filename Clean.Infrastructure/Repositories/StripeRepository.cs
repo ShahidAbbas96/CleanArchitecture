@@ -185,7 +185,7 @@ namespace Clean.Infrastructure.Repositories
                 response.Status = false;
                 response.Message = ex.InnerException?.Message ?? ex.Message;
             }
-            return response;v
+            return response;
         }
 
     }

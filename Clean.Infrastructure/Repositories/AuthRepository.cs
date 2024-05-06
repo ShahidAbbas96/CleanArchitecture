@@ -14,6 +14,8 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using Twilio;
+using Twilio.Rest.Api.V2010.Account;
 
 namespace Clean.Infrastructure.Repositories
 {
@@ -68,7 +70,44 @@ namespace Clean.Infrastructure.Repositories
             }
             return response;
         }
-
+       public async Task<ResponseDto> SendOTPSMS(LoginDto loginDto)
+        {
+            ResponseDto response = new ResponseDto();
+            try
+            {
+                var IsExist = await IsUserEmailExist(loginDto.Email);
+                if (IsExist != null)
+                {
+                    var IsPasswordExist = await IsEmailPasswordExist(loginDto);
+                    if (IsPasswordExist != null)
+                    {
+                        IsExist.OTP = Generate4DigitNumericOtp();
+                       await SendSMS(IsExist.PhoneNumber,IsExist.OTP.ToString());
+                        IsExist.OTPExpireTime = DateTime.Now.AddMinutes(5);
+                        await db.SaveChangesAsync();
+                        response.Status = true;
+                        response.Message = "Success";
+                        response.Data = IsExist.OTP;
+                    }
+                    else
+                    {
+                        response.Status = false;
+                        response.Message = "User Email Or Password is Incorrect";
+                    }
+                }
+                else
+                {
+                    response.Status = false;
+                    response.Message = "User Is Not Exist";
+                }
+            }
+            catch (Exception ex)
+            {
+                response.Status = false;
+                response.Message = ex.InnerException == null ? ex.Message : ex.InnerException.Message;
+            }
+            return response;
+        }
         public async Task<ResponseDto> Signup(SignupDto signupDto)
         {
             ResponseDto response = new ResponseDto();
@@ -118,7 +157,7 @@ namespace Clean.Infrastructure.Repositories
                 );
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-
+       
         private async Task<User?> IsUserEmailExist(string email)
         {
             return await this.db.Users.Where(x => x.Email.Equals(email) && x.IsActive == true).FirstOrDefaultAsync();
@@ -132,6 +171,42 @@ namespace Clean.Infrastructure.Repositories
                 return user;
             }
             return null;
+        }
+        public static int Generate4DigitNumericOtp()
+        {
+            Random random = new Random();
+            int otp = random.Next(1000, 10000); // Generate a 4-digit OTP
+            return otp;
+        }
+        private async Task SendSMS(string phoneNumber, string message)
+        {
+            string accountSid = Environment.GetEnvironmentVariable("AC264b62e71db3732ca0ee2e68f2de0fbb");
+            string authToken = Environment.GetEnvironmentVariable("ece14c85af895e29927fbb208b476bde");
+
+            TwilioClient.Init(accountSid, authToken);
+
+            var messages = MessageResource.Create(
+                body: $"Here Is Your OTP {message}",
+                from: new Twilio.Types.PhoneNumber("+13187025120"),
+                to: new Twilio.Types.PhoneNumber(phoneNumber)
+            );
+
+            Console.WriteLine(messages.Sid);
+        }
+        private async Task SendWhatsApp(string phoneNumber, string message)
+        {
+            string accountSid = Environment.GetEnvironmentVariable("AC264b62e71db3732ca0ee2e68f2de0fbb");
+            string authToken = Environment.GetEnvironmentVariable("ece14c85af895e29927fbb208b476bde");
+
+            TwilioClient.Init(accountSid, authToken);
+
+            var messages = MessageResource.Create(
+                body: $"Here Is Your OTP {message}",
+                from: new Twilio.Types.PhoneNumber("whatsapp:++14155238886"),
+            to: new Twilio.Types.PhoneNumber($"whatsapp:{phoneNumber}")
+            );
+
+            Console.WriteLine(messages.Sid);
         }
     }
 }

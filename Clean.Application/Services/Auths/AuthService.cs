@@ -25,5 +25,9 @@ namespace Clean.Application.Services.Auths
         {
             return await this.authRepository.Signup(signupDto);
         }
+        public async Task<ResponseDto> SendOTPSMS(LoginDto loginDto)
+        {
+            return await this.authRepository.SendOTPSMS(loginDto);
+        }
     }
 }
