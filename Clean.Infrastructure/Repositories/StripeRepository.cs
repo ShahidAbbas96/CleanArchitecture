@@ -29,11 +29,11 @@ namespace Clean.Infrastructure.Repositories
                     lineItems.Add(new SessionLineItemOptions
                     {
                         Price = priceId,
-                    Quantity = 1
+                        Quantity = 1
 
                     });
                 }
-              
+
                 var options = new Stripe.Checkout.SessionCreateOptions
                 {
                     SuccessUrl = "http://localhost:4200/inform-register",
@@ -42,8 +42,8 @@ namespace Clean.Infrastructure.Repositories
                     LineItems = lineItems,
                     Mode = "subscription",
                     ClientReferenceId = "1",
-                    PaymentMethodCollection= "if_required"
-                    
+                    PaymentMethodCollection = "if_required"
+
                 };
 
                 // Create a new session
@@ -58,7 +58,7 @@ namespace Clean.Infrastructure.Repositories
                 response.Message = ex.InnerException?.Message;
             }
             return response;
-        } 
+        }
         public async Task<ResponseDto> RecordUsage(string subscriptionItemId, int quantity)
         {
             var response = new ResponseDto();
@@ -74,7 +74,7 @@ namespace Clean.Infrastructure.Repositories
                 };
                 var service = new UsageRecordService();
                 var usageRecord = service.Create(subscriptionItemId, options);
-                response.Data =usageRecord;
+                response.Data = usageRecord;
                 response.Status = true;
                 response.Message = "User Adedd SuccessFully";
             }
@@ -104,7 +104,7 @@ namespace Clean.Infrastructure.Repositories
                         Deleted = true
                     });
                 }
-                for(int i = 0;i< newPriceIds.Count; i++)
+                for (int i = 0; i < newPriceIds.Count; i++)
                 {
                     options.Items.Add(new SubscriptionItemOptions
                     {
@@ -133,31 +133,31 @@ namespace Clean.Infrastructure.Repositories
                 var options = new SubscriptionListOptions { Customer = customerId };
                 var service = new SubscriptionService();
                 StripeList<Subscription> subscriptions = service.List(options);
-                string ItemSubscriptionIds="";
+                string ItemSubscriptionIds = "";
                 string PriceIds = "";
-                string SubscriptionId="";
+                string SubscriptionId = "";
                 foreach (var subscription in subscriptions.Data[0].Items)
                 {
-                    if(PriceIds=="" && ItemSubscriptionIds == "")
+                    if (PriceIds == "" && ItemSubscriptionIds == "")
                     {
                         ItemSubscriptionIds += subscription.Id;
-                        PriceIds +=  subscription.Price.Id;
+                        PriceIds += subscription.Price.Id;
                     }
                     else
                     {
                         ItemSubscriptionIds += "," + subscription.Id;
                         PriceIds += "," + subscription.Price.Id;
                     }
-                   
+
                     SubscriptionId = subscription.Subscription;
                 }
                 string ItemSubscriptionId = subscriptions.Data[0].Items.Data[0].Id;
-                var priceId=  subscriptions.Data[0].Items.Data[0].Price.Id;
+                var priceId = subscriptions.Data[0].Items.Data[0].Price.Id;
                 response.Data = new
                 {
-                    PriceIds= PriceIds,
-                    ItemSubscriptionIds= ItemSubscriptionIds,
-                    SubscriptionId= SubscriptionId
+                    PriceIds = PriceIds,
+                    ItemSubscriptionIds = ItemSubscriptionIds,
+                    SubscriptionId = SubscriptionId
                 };
                 response.Status = true;
                 response.Message = "User Adedd SuccessFully";
@@ -185,7 +185,7 @@ namespace Clean.Infrastructure.Repositories
                 response.Status = false;
                 response.Message = ex.InnerException?.Message ?? ex.Message;
             }
-            return response;v
+            return response;
         }
 
     }
